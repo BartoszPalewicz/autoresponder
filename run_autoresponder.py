@@ -135,7 +135,7 @@ def do_connect_to_smtp():
 def fetch_emails():
     # get the message ids from the inbox folder
     incoming_mail_server.select(config['folders.inbox'])
-    (retcode, message_indices) = incoming_mail_server.search(None, ('TEXT "exampletext2137" FROM mdbyouth.org'))
+    (retcode, message_indices) = incoming_mail_server.search(None, ('TEXT "link_from_craigslist" FROM reply.craigslist.org'))
     if retcode == 'OK':
         messages = []
         for message_index in message_indices[0].split():
@@ -172,7 +172,7 @@ def process_email(mail):
         form_adres=mail_sender.split('@')[1][:-1]
         full_adres=mail_sender.split('<')[1][:-1]
         
-        if form_adres=='mdbyouth.org':
+        if form_adres=='reply.craigslist.org':
             reply_to_email(mail, full_adres)
             move_email(mail)
         else:
