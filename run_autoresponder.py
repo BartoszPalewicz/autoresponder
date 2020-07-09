@@ -57,9 +57,9 @@ def initialize_configuration():
         global config
         config = {
             'in.user': cast(config_file["login credentials"]["mailserver.incoming.username"], str),
-            'in.pw': cast(config_file["login credentials"]["mailserver.incoming.password"], str),
+            'in.pw': '',
             'out.user': cast(config_file["login credentials"]["mailserver.outgoing.username"], str),
-            'out.pw': cast(config_file["login credentials"]["mailserver.outgoing.password"], str),
+            'out.pw': '',
             'display.name': cast(config_file["login credentials"]["mailserver.outgoing.display.name"], str),
             'display.mail': cast(config_file["login credentials"]["mailserver.outgoing.display.mail"], str),
             'in.host': cast(config_file["mail server settings"]["mailserver.incoming.imap.host"], str),
@@ -70,7 +70,8 @@ def initialize_configuration():
             'folders.answered': cast(config_file["mail server settings"]["mailserver.incoming.folders.answered.name"], str),
             'request.from': cast(config_file["mail content settings"]["mail.request.from"], str),
             'reply.subject': cast(config_file["mail content settings"]["mail.reply.subject"], str).strip(),
-            'reply.body': cast(config_file["mail content settings"]["mail.reply.body"], str).strip()
+            'reply.body': cast(config_file["mail content settings"]["mail.reply.body"], str).strip(),
+            'include' : cast(config_file["mail content settings"]["mail.include"], str)
         }
     except KeyError as e:
         shutdown_with_error("Configuration file is invalid! (Key not found: " + str(e) + ")")
@@ -135,7 +136,8 @@ def do_connect_to_smtp():
 def fetch_emails():
     # get the message ids from the inbox folder
     incoming_mail_server.select(config['folders.inbox'])
-    (retcode, message_indices) = incoming_mail_server.search(None, ('TEXT "link_from_craigslist" FROM reply.craigslist.org'))
+    (retcode, message_indices) = incoming_mail_server.search(None, '(TEXT "'+config['include']+'" FROM "'+config['request.from']+'")')
+    print('(TEXT "https://devsdata.com/" FROM "'+config['request.from']+'")')
     if retcode == 'OK':
         messages = []
         for message_index in message_indices[0].split():
@@ -172,7 +174,7 @@ def process_email(mail):
         form_adres=mail_sender.split('@')[1][:-1]
         full_adres=mail_sender.split('<')[1][:-1]
         
-        if form_adres=='reply.craigslist.org':
+        if form_adres==config['request.from']:
             reply_to_email(mail, full_adres)
             move_email(mail)
         else:
@@ -216,7 +218,7 @@ def move_email(mail):
         statistics['mails_in_answered'] += 1
     else:
         log_warning("Copying email to answered failed. Reason: " + str(result))
-    incoming_mail_server.uid('STORE', mail['mailserver_email_uid'], '+FLAGS', '(\Answered)')
+    incoming_mail_server.uid('STORE', mail['mailserver_email_uid'], '+FLAGS', '(\Deleted)')
     incoming_mail_server.expunge()
 
 
